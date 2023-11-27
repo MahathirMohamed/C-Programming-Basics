@@ -1,0 +1,173 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+ 
+// Constants
+const int NUM_BIO_STREAM_CLASSES = 3;
+const int NUM_MATH_STREAM_CLASSES = 5;
+const int STUDENTS_PER_CLASS = 40;
+const int NUM_SUBJECTS = 3; // Number of subjects for both streams
+ 
+// Structure to represent a student
+struct Student {
+    std::string stream;
+    int rollNumber;
+    std::string name;
+    int marks[NUM_SUBJECTS];
+    int totalMarks;
+    int schoolRank;
+    int classRank;
+};
+ 
+// Function prototypes
+void inputStudentData(std::vector<Student>& students);
+void saveStudentData(const std::vector<Student>& students, const std::string& filename);
+void loadStudentData(std::vector<Student>& students, const std::string& filename);
+void calculateRanks(std::vector<Student>& students);
+void printResults(const std::vector<Student>& students);
+ 
+int main() {
+    std::vector<Student> students;
+ 
+    // Input student data
+    inputStudentData(students);
+ 
+    // Save student data to a file
+    saveStudentData(students, "student_data.txt");
+ 
+    // Load student data from the file
+    loadStudentData(students, "student_data.txt");
+ 
+    // Calculate ranks
+    calculateRanks(students);
+ 
+    // Print results
+    printResults(students);
+ 
+    return 0;
+}
+ 
+void inputStudentData(std::vector<Student>& students) {
+    for (int i = 0; i < NUM_BIO_STREAM_CLASSES; ++i) {
+        for (int j = 0; j < STUDENTS_PER_CLASS; ++j) {
+            Student student;
+            student.stream = "Bioscience";
+            student.rollNumber = i * STUDENTS_PER_CLASS + j + 1; // Unique roll number
+            std::cout << "Enter details for Bioscience stream student " << student.rollNumber << ":\n";
+            std::cout << "Name: ";
+            std::getline(std::cin, student.name);
+ 
+            std::cout << "Enter marks for Biology, Physics, and Chemistry: ";
+            for (int k = 0; k < NUM_SUBJECTS; ++k) {
+                std::cin >> student.marks[k];
+            }
+ 
+            students.push_back(student);
+            std::cin.ignore(); // Ignore the newline character in the input buffer
+        }
+    }
+ 
+    for (int i = 0; i < NUM_MATH_STREAM_CLASSES; ++i) {
+        for (int j = 0; j < STUDENTS_PER_CLASS; ++j) {
+            Student student;
+            student.stream = "Mathematics";
+            student.rollNumber = (NUM_BIO_STREAM_CLASSES + i) * STUDENTS_PER_CLASS + j + 1; // Unique roll number
+            std::cout << "Enter details for Mathematics stream student " << student.rollNumber << ":\n";
+            std::cout << "Name: ";
+            std::getline(std::cin, student.name);
+ 
+            std::cout << "Enter marks for Combined Maths, Physics, and Chemistry: ";
+            for (int k = 0; k < NUM_SUBJECTS; ++k) {
+                std::cin >> student.marks[k];
+            }
+ 
+            students.push_back(student);
+            std::cin.ignore(); // Ignore the newline character in the input buffer
+        }
+    }
+}
+ 
+void saveStudentData(const std::vector<Student>& students, const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error opening file for writing.\n";
+        return;
+    }
+ 
+    for (const auto& student : students) {
+        file << student.stream << " " << student.rollNumber << " " << student.name << " ";
+        for (int i = 0; i < NUM_SUBJECTS; ++i) {
+            file << student.marks[i] << " ";
+        }
+        file << "\n";
+    }
+ 
+    file.close();
+}
+ 
+void loadStudentData(std::vector<Student>& students, const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error opening file for reading.\n";
+        return;
+    }
+ 
+    while (!file.eof()) {
+        Student student;
+        file >> student.stream >> student.rollNumber >> student.name;
+        for (int i = 0; i < NUM_SUBJECTS; ++i) {
+            file >> student.marks[i];
+        }
+        students.push_back(student);
+    }
+ 
+    file.close();
+}
+ 
+void calculateRanks(std::vector<Student>& students) {
+    // Calculate total marks and sort students based on total marks
+    for (auto& student : students) {
+        student.totalMarks = 0;
+        for (int i = 0; i < NUM_SUBJECTS; ++i) {
+            student.totalMarks += student.marks[i];
+        }
+    }
+ 
+    // Sort students in descending order of total marks
+    std::sort(students.begin(), students.end(), [](const Student& a, const Student& b) {
+        return a.totalMarks > b.totalMarks;
+    });
+ 
+    // Assign school ranks
+    for (size_t i = 0; i < students.size(); ++i) {
+        students[i].schoolRank = static_cast<int>(i) + 1;
+    }
+ 
+    // Assign class ranks
+    for (int i = 0; i < NUM_BIO_STREAM_CLASSES + NUM_MATH_STREAM_CLASSES; ++i) {
+        // Extract students of each class
+        auto classStart = students.begin() + i * STUDENTS_PER_CLASS;
+        auto classEnd = classStart + STUDENTS_PER_CLASS;
+ 
+        // Sort students of the class based on total marks
+        std::sort(classStart, classEnd, [](const Student& a, const Student& b) {
+            return a.totalMarks > b.totalMarks;
+        });
+ 
+        // Assign class ranks within each class
+        for (size_t j = 0; j < STUDENTS_PER_CLASS; ++j) {
+            classStart[j].classRank = static_cast<int>(j) + 1;
+        }
+    }
+}
+ 
+void printResults(const std::vector<Student>& students) {
+    std::cout << "School Rank\tClass Rank\tStream\tRoll Number\tName\tTotal Marks\n";
+ 
+    for (const auto& student : students) {
+        std::cout << student.schoolRank << "\t\t" << student.classRank << "\t\t"
+<< student.stream << "\t" << student.rollNumber << "\t\t"
+<< student.name << "\t" << student.totalMarks << "\n";
+    }
+}
